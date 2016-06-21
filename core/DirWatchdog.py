@@ -11,8 +11,8 @@ from telegram.ext import CommandHandler
 from watchdog.observers import Observer
 from telegram.ext import MessageHandler, Filters
 
-#FTP_DIR = '/home/pi/ftp'
-FTP_DIR = '/Users/icewind/ftp'
+FTP_DIR = '/home/pi/ftp'
+#FTP_DIR = '/Users/icewind/ftp'
 active_chats = []
 
 
