@@ -6,7 +6,9 @@ import telegram
 import time
 import os
 import os.path
+import collections
 import NewFileEventHandler
+from psutil import virtual_memory
 from telegram.ext import CommandHandler
 from watchdog.observers import Observer
 from telegram.ext import MessageHandler, Filters
@@ -74,11 +76,19 @@ def status(bot, update):
 def echo(bot, update):
     text = update.message.text
 
-    if text == "че как" or text == "Че как":
+    if text.lower() == "камера":
         bot.sendMessage(chat_id = update.message.chat_id, text='Сейчас посмотрю. 5сек')
         info = tell_full_status()
-        file_count_msg = 'Сейчас у меня {} файлов с камеры.'.format(info['file_count'])
+        file_count_msg = 'Сейчас у меня {} файла(ов) с камеры.'.format(info['file_count'])
         last_file_msg = 'Последний из них был {}'.format(info['last_modified'])
+        bot.sendMessage(chat_id = update.message.chat_id, text = file_count_msg)
+        bot.sendMessage(chat_id = update.message.chat_id, text = last_file_msg)
+
+    if text.lower() == "как дела?" or text.lower() == "че как":
+        bot.sendMessage(chat_id = update.message.chat_id, text='Нормал')
+        info = tell_self_status()
+        file_count_msg = 'Сейчас у меня {} места свободно'.format(info['disk_free'])
+        last_file_msg = 'Памяти свободно {} Мб'.format(info['memory_usage'])
         bot.sendMessage(chat_id = update.message.chat_id, text = file_count_msg)
         bot.sendMessage(chat_id = update.message.chat_id, text = last_file_msg)
 
@@ -110,6 +120,29 @@ def tell_full_status():
     total_info['last_modified'] = time.ctime(last_time)
     return total_info
 
+_ntuple_diskusage = collections.namedtuple('usage', 'total used free')
+
+
+def disk_usage(path):
+    st = os.statvfs(path)
+    free = st.f_bavail * st.f_frsize
+    total = st.f_blocks * st.f_frsize
+    used = (st.f_blocks - st.f_bfree) * st.f_frsize
+    return _ntuple_diskusage(total, used, free)
+
+
+def memory_usage():
+    mem = virtual_memory()
+    return mem.available/1024/1024
+
+
+def tell_self_status():
+    disk_total, disk_used, disk_free = disk_usage(os.getcwd())
+    usage_memory = memory_usage()
+
+    info = {'memory_usage': usage_memory, 'disk_free': (disk_free/1024/1024)}
+
+    return info
 
 
 
