@@ -6,7 +6,7 @@ import telegram
 import time
 from telegram.ext import CommandHandler
 from watchdog.observers import Observer
-from core import NewFileEventHandler
+import NewFileEventHandler
 from telegram.ext import MessageHandler, Filters
 
 
