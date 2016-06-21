@@ -88,6 +88,10 @@ def echo(bot, update):
     if text == "марко":
         bot.sendMessage(chat_id = update.message.chat_id, text = 'поло')
 
+    if text == "как":
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'Могу рассказать че как. Погоду. Подписать тебя на '
+                                                                 'обнаружение движения от камеры')
+
 
 def tell_full_status():
     # files count
