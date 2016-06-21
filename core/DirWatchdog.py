@@ -4,12 +4,15 @@
 import logging
 import telegram
 import time
+import os
+import os.path
+import NewFileEventHandler
 from telegram.ext import CommandHandler
 from watchdog.observers import Observer
-import NewFileEventHandler
 from telegram.ext import MessageHandler, Filters
 
-
+#FTP_DIR = '/home/pi/ftp'
+FTP_DIR = '/Users/icewind/ftp'
 active_chats = []
 
 
@@ -52,26 +55,67 @@ class DirWatchdog(object):
 
 def new_file_found(args):
     for c in active_chats:
-        sendingBot.sendPhoto(c, photo=open(args, 'rb'))
+        if args.endswith('.jpg'):
+            sendingBot.sendPhoto(c, photo=open(args, 'rb'))
+        else:
+            print('Ignored file with name {}', args)
 
 
 
 def status(bot, update):
     if update.message.chat_id not in active_chats:
         active_chats.append(update.message.chat_id)
-        bot.sendMessage(chat_id = update.message.chat_id, text = 'You will recieve it')
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'Ага. Буду присылать тебе фотки обнаружения движения')
     else:
-        bot.sendMessage(chat_id = update.message.chat_id, text = 'you are already subscribed!')
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'Я итак тебе присылаю обнаружение движения. Не '
+                                                                 'писькуй давай')
 
 
 def echo(bot, update):
-    text = update.message.text;
-    if text == "че как":
-        bot.sendMessage(chat_id = update.message.chat_id, text='Все хорошо. Больше пока не готов сказать')
+    text = update.message.text
+
+    if text == "че как" or text == "Че как":
+        bot.sendMessage(chat_id = update.message.chat_id, text='Сейчас посмотрю. 5сек')
+        info = tell_full_status()
+        file_count_msg = 'Сейчас у меня {} файлов с камеры.'.format(info['file_count'])
+        last_file_msg = 'Последний из них был {}'.format(info['last_modified'])
+        bot.sendMessage(chat_id = update.message.chat_id, text = file_count_msg)
+        bot.sendMessage(chat_id = update.message.chat_id, text = last_file_msg)
+
+    if text == "погода":
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'Купите мне термометр электронный и будет погода')
+
+    if text == "марко":
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'поло')
+
+
+def tell_full_status():
+    # files count
+    count = 0
+    total_info = {}
+    last_time = None
+    for name in os.listdir(FTP_DIR):
+        if os.path.isfile(os.path.join(FTP_DIR, name)):
+            mtime = os.path.getmtime(os.path.join(FTP_DIR, name))
+            if last_time is None:
+                last_time = mtime
+            if mtime > last_time:
+                last_time = mtime
+            count += 1
+    total_info['file_count'] = count
+    total_info['last_modified'] = time.ctime(last_time)
+    return total_info
+
+
+
+
+def temp(bot, update):
+    pass
+
 
 
 def start(bot, update):
-    bot.sendMessage(chat_id = update.message.chat_id, text='Hello, master')
+    bot.sendMessage(chat_id = update.message.chat_id, text='Мучо грасиас, Шалом энд велкам!')
 
 if __name__ == '__main__':
     print('Starting watchdog on folder')
@@ -94,7 +138,7 @@ if __name__ == '__main__':
     # starting folder watching
     wdog = DirWatchdog()
     wdog.watchdog_callback = new_file_found
-    wdog.watch('/home/pi/ftp', new_file_found)
+    wdog.watch(FTP_DIR, new_file_found)
 
 
 

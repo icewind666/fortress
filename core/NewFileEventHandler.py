@@ -1,6 +1,8 @@
-import watchdog
+
+import time
 from watchdog.events import FileCreatedEvent
 from watchdog.events import FileSystemEventHandler
+
 
 class NewFileEventHandler(FileSystemEventHandler):
     """
@@ -13,5 +15,9 @@ class NewFileEventHandler(FileSystemEventHandler):
         if isinstance(event, FileCreatedEvent):
             print("File created!!")
             print(event.src_path)
+            print('Waiting for copy to complete. 2 secs')
+
             if self.callback_handle is not None:
+                time.sleep(2)
+                print('Calling handler function')
                 self.callback_handle(event.src_path)
