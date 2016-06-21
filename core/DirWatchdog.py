@@ -94,7 +94,7 @@ if __name__ == '__main__':
     # starting folder watching
     wdog = DirWatchdog()
     wdog.watchdog_callback = new_file_found
-    wdog.watch('/Users/icewind/ftp', new_file_found)
+    wdog.watch('/home/pi/ftp', new_file_found)
 
 
 
