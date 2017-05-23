@@ -8,14 +8,37 @@ import os
 import os.path
 import collections
 import NewFileEventHandler
+
 from psutil import virtual_memory
 from telegram.ext import CommandHandler
 from watchdog.observers import Observer
 from telegram.ext import MessageHandler, Filters
+from requests import get
+from requests.auth import HTTPBasicAuth
 
 #FTP_DIR = '/home/pi/ftp'
 FTP_DIR = '/Users/icewind/ftp'
 active_chats = []
+active_cameras = [
+    {
+        "id": 0,
+        "title": "HighResZenfone",
+        "ip": "192.168.0.102:8080",
+        "type": "android"
+    },
+    {
+        "id": 1,
+        "title": "OldDesire",
+        "ip": "192.168.0.105:8080",
+        "type": "android"
+    },
+    {
+        "id": 2,
+        "title": "IP camera",
+        "ip": "192.168.0.101",
+        "type": "ipcam"
+    }
+]
 
 
 class DirWatchdog(object):
@@ -42,7 +65,7 @@ class DirWatchdog(object):
         handler = NewFileEventHandler.NewFileEventHandler()
         handler.callback_handle = self.watchdog_callback
         observer = Observer()
-        observer.schedule(handler, self.folder_to_watch, recursive = False)
+        observer.schedule(handler, self.folder_to_watch, recursive=False)
         observer.start()
 
         try:
@@ -53,8 +76,6 @@ class DirWatchdog(object):
         observer.join()
 
 
-
-
 def new_file_found(args):
     for c in active_chats:
         if args.endswith('.jpg'):
@@ -63,18 +84,18 @@ def new_file_found(args):
             print('Ignored file with name {}', args)
 
 
-
 def status(bot, update):
     if update.message.chat_id not in active_chats:
         active_chats.append(update.message.chat_id)
-        bot.sendMessage(chat_id = update.message.chat_id, text = 'Ага. Буду присылать тебе фотки обнаружения движения')
+        bot.sendMessage(chat_id=update.message.chat_id, text='Ага. Буду присылать тебе фотки обнаружения движения')
     else:
-        bot.sendMessage(chat_id = update.message.chat_id, text = 'Я итак тебе присылаю обнаружение движения. Не '
-                                                                 'писькуй давай')
+        bot.sendMessage(chat_id=update.message.chat_id, text='Я итак присылаю обнаружение движения')
 
 
 def echo(bot, update):
     text = update.message.text
+    print("received:", text)
+    understood = False
 
     if text.lower() == "камера":
         bot.sendMessage(chat_id = update.message.chat_id, text='Сейчас посмотрю. 5сек')
@@ -83,6 +104,33 @@ def echo(bot, update):
         last_file_msg = 'Последний из них был {}'.format(info['last_modified'])
         bot.sendMessage(chat_id = update.message.chat_id, text = file_count_msg)
         bot.sendMessage(chat_id = update.message.chat_id, text = last_file_msg)
+        understood = True
+
+    if text.lower() == "камеры":
+        bot.sendMessage(chat_id = update.message.chat_id, text='Сейчас посмотрю. 5сек')
+        info = active_cameras_list()
+        bot.sendMessage(chat_id = update.message.chat_id, text = info)
+
+        custom_keyboard = [['фото 1','фото 2','вспышка вкл 1', 'вспышка выкл 1']]
+        reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
+        bot.sendMessage(chat_id = update.message.chat_id, text = "Stay here, I'll be back.", reply_markup = reply_markup)
+        understood = True
+
+    if text.startswith("вспышка вкл"):
+        cam_id = text[12:]
+        toggle_torch(cam_id, True)
+        understood = True
+
+    if text.startswith("вспышка выкл"):
+        cam_id = text[13:]
+        toggle_torch(cam_id, False)
+        understood = True
+
+    if text.startswith("фото"):
+        cam_id = text[5:]
+        photo = get_cam_photo(cam_id)
+
+        understood = True
 
     if text.lower() == "как дела?" or text.lower() == "че как":
         bot.sendMessage(chat_id = update.message.chat_id, text='Нормал')
@@ -91,16 +139,23 @@ def echo(bot, update):
         last_file_msg = 'Памяти свободно {} Мб'.format(info['memory_usage'])
         bot.sendMessage(chat_id = update.message.chat_id, text = file_count_msg)
         bot.sendMessage(chat_id = update.message.chat_id, text = last_file_msg)
+        understood = True
 
     if text == "погода":
         bot.sendMessage(chat_id = update.message.chat_id, text = 'Купите мне термометр электронный и будет погода')
+        understood = True
 
     if text == "марко":
         bot.sendMessage(chat_id = update.message.chat_id, text = 'поло')
+        understood = True
 
     if text == "как":
         bot.sendMessage(chat_id = update.message.chat_id, text = 'Могу рассказать че как. Погоду. Подписать тебя на '
                                                                  'обнаружение движения от камеры')
+        understood = True
+
+    if not understood:
+        bot.sendMessage(chat_id = update.message.chat_id, text = 'я короче не понял) сорян борян')
 
 
 def tell_full_status():
@@ -145,6 +200,51 @@ def tell_self_status():
     return info
 
 
+def toggle_torch(camera_id=0, state=False):
+    current_camera = None
+    for cam in active_cameras:
+        if str(cam["id"]) == camera_id:
+            current_camera = cam
+
+    if current_camera is None:
+        print("error : cam not found")
+        return None
+    action = "disabletorch"
+    if state:
+        action = "enabletorch"
+
+    get("http://{}/{}".format(current_camera["ip"], action))
+
+
+def get_cam_photo(cam_id):
+    current_camera = None
+    for cam in active_cameras:
+        if str(cam["id"]) == cam_id:
+            current_camera = cam
+
+    if current_camera is None:
+        print("error : cam not found")
+        return None
+    if current_camera["type"] == "android":
+        action = "photo.jpg"
+        for c in active_chats:
+            print("http://{}/{}".format(current_camera["ip"], action))
+            sendingBot.sendPhoto(c, photo = "http://{}/{}".format(current_camera["ip"], action))
+    else:
+        action = "image/jpeg.cgi"
+        r = get("http://{}/{}".format(current_camera["ip"], action), auth=HTTPBasicAuth('admin', 't5atigeno2t'))
+        with open("temp.jpg", "wb") as f:
+            f.write(r.content)
+        for c in active_chats:
+            sendingBot.sendPhoto(c, photo=open("temp.jpg", "rb"))
+
+
+def active_cameras_list():
+    result = ""
+    for x in active_cameras:
+        print(x["title"])
+        result = "\n{}\n{}:{}".format(result, x["id"], x["title"])
+    return result
 
 def temp(bot, update):
     pass
@@ -152,7 +252,7 @@ def temp(bot, update):
 
 
 def start(bot, update):
-    bot.sendMessage(chat_id = update.message.chat_id, text='Мучо грасиас, Шалом энд велкам!')
+    bot.sendMessage(chat_id=update.message.chat_id, text='Мучо грасиас, Шалом энд велкам!')
 
 if __name__ == '__main__':
     print('Starting watchdog on folder')

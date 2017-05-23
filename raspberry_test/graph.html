@@ -1,10 +1,117 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>$Title$</title>
+    <title>Temperature</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+    <script src="Chart.js/Chart.js"></script>
+
+
 </head>
-<body>
-$END$
+<body width="100%" height="100%">
+<div style="position:absolute; top:60px; left:10px; width:1000px; height:300px;">
+    <canvas id="myLineChart" width="300" height="300"></canvas>
+</div>
+<script>
+
+setTimeout(get_json, 5000);
+
+function get_json() {
+    $.getJSON('http://192.168.0.104:9999/json', function(data){
+      var items = [];
+      var labels = [];
+      var data_items = [];
+
+      $.each(data, function(key, val){
+        //labels.push(key);
+        //data_items.push(val);
+
+        dt_label = val["dt"];
+        value_label = val["value"];
+
+        labels.push(dt_label);
+        data_items.push(value_label);
+
+      });
+
+      showChart(labels, data_items);
+
+
+
+    });
+    setTimeout(get_json, 10000);
+
+}
+
+
+function showChart(labelsValue, dataValues) {
+    console.log(labelsValue);
+    console.log(dataValues);
+
+    var data = {
+        labels: labelsValue,
+        datasets: [
+            {
+                label: "Температура",
+                fill: false,
+                lineTension: 0.1,
+                backgroundColor: "rgba(75,192,192,0.4)",
+                borderColor: "rgba(75,192,192,1)",
+                borderCapStyle: 'butt',
+                borderDash: [],
+                borderDashOffset: 0.0,
+                borderJoinStyle: 'miter',
+                pointBorderColor: "rgba(75,192,192,1)",
+                pointBackgroundColor: "#fff",
+                pointBorderWidth: 1,
+                pointHoverRadius: 5,
+                pointHoverBackgroundColor: "rgba(75,192,192,1)",
+                pointHoverBorderColor: "rgba(220,220,220,1)",
+                pointHoverBorderWidth: 2,
+                pointRadius: 1,
+                pointHitRadius: 5,
+                data: dataValues,
+                spanGaps: false,
+            }
+        ]
+    };
+    var ctx = document.getElementById("myLineChart").getContext("2d");
+    ctx.canvas.width = 600;
+    ctx.canvas.height = 300;
+
+    var myLineChart = new Chart(ctx, {
+        type: 'line',
+        data: data
+        ,
+                options: {
+                    responsive: true,
+                    title:{
+                        display:true,
+                        text:"График от датчика"
+                    },
+                    scales: {
+                        xAxes: [{
+                            type: "time",
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Date'
+                            }
+                        }],
+                        yAxes: [{
+                            display: true,
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'value'
+                            }
+                        }]
+                    }
+                }
+    });
+}
+	</script>
+
 </body>
 </html>
