@@ -3,24 +3,25 @@ import json
 import time
 import sqlite3
 import datetime
+from utils.util_lib import modprobe_w1_gpio
+from storage import Storage
 
 
-class Sensor(object):
+class TemperatureSensor(object):
     """
     Base sensor class.
     Sensor is values (time, value)
     """
     value = ""
-    id = ""
-    units = "шт."
-    db_table = "default"
 
+    def __init__(self):
+        modprobe_w1_gpio()
 
-    """
-    Saves to db
-    """
-    def save(self):
-
+    def save(self, dtime, value):
+        """
+        Saves to db
+        """
+        
         pass
 
     """
@@ -35,16 +36,4 @@ class Sensor(object):
     Reads values in date range
     """
     def read_range(self, datetime_from, datetime_to):
-        pass
-
-
-class Temperature(Sensor):
-    """
-    Temperature sensor class.
-    """
-
-    """
-    Inits temp sensor.
-    """
-    def init(self):
         pass

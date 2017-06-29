@@ -36,7 +36,7 @@ def get_archive_from_db():
     #print 'get_archive_from_db()'
     con = sqlite3.connect('temp')
     cur = con.cursor()
-    cur.execute('select dt,value from (select * from temperature order by id DESC limit 50) order by id ASC;')
+    cur.execute('select dt,value from (select * from temperature order by id DESC limit 10) order by id ASC;')
 
     result = []
 

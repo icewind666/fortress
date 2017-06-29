@@ -58,9 +58,6 @@ class LCDDisplay:
         self.bus.write_byte(self.I2C_ADDR, bits_low)
         self.lcd_toggle_enable(bits_low)
 
-    """
-  """
-
     def lcd_toggle_enable(self, bits):
         time.sleep(self.E_DELAY)
         self.bus.write_byte(self.I2C_ADDR, (bits | self.ENABLE))
@@ -68,24 +65,14 @@ class LCDDisplay:
         self.bus.write_byte(self.I2C_ADDR, (bits & ~self.ENABLE))
         time.sleep(self.E_DELAY)
 
-    """
-  """
-
     def lcd_string(self, message, line):
         message = message.ljust(self.LCD_WIDTH, " ")
         self.lcd_byte(line, self.LCD_CMD)
-        print "printing bytes"
         for i in range(self.LCD_WIDTH):
             self.lcd_byte(ord(message[i]), self.LCD_CHR)
 
-    """
-  """
-
     def print_line1(self, msg):
         self.lcd_string(msg, self.LCD_LINE_1)
-
-    """
-  """
 
     def print_line2(self, msg):
         self.lcd_string(msg, self.LCD_LINE_2)

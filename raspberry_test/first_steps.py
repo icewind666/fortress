@@ -6,15 +6,13 @@ import os
 import glob
 import requests
 import time
+import serial
 import RPi.GPIO as GPIO
 import time
-from lcd_iic import LCDDisplay
 
-
-buzzer_pin = 0
+from raspberry_test.lcd_iic import LCDDisplay
 
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(buzzer_pin, GPIO.OUT)
  
 # Initialize the GPIO Pins
 os.system('modprobe w1-gpio')   # Turns on the GPIO module
@@ -27,7 +25,7 @@ device_file = device_folder + '/w1_slave'
 
 lcd = LCDDisplay()
 lcd.init()
-
+last_value = 0 # last temperature read
 
 # A function that reads the sensors data
 def read_temp_raw():
@@ -35,7 +33,8 @@ def read_temp_raw():
     lines = f.readlines()  # Returns the text
     f.close()
     return lines
- 
+
+
 # Convert the value of the sensor into a temperature
 def read_temp():
     lines = read_temp_raw() # Read the temperature 'device file'
@@ -61,26 +60,27 @@ def read_temp():
 
 
  
-def buzz():
-    print('buzzing ')
-    GPIO.output(buzzer_pin, True)
-    time.sleep(2)
-    GPIO.output(buzzer_pin, False)
-    #GPIO.output(buzzer_pin, False)
-
 def lcd_write_temp(t):
-
     lcd.print_line1("Temperature")
     lcd.print_line2("{} C".format(t))
     #lcd.lcd_byte(0x01, lcd.LCD_CMD)
 
-
 # Print out the temperature until the program is stopped.
+ser = serial.Serial('/dev/ttyACM0', 9600)
 while True:
     try:
         current_temp = read_temp()
-        print 'Read t=',current_temp
-        r = requests.get("http://192.168.0.100:9999/temp?t={}".format(current_temp))
+        print('Read t=', current_temp)
+        if abs(float(current_temp) - last_value) > 1:
+            print 'delta = ', abs(float(current_temp) - last_value)
+            ser.write('10')
+            time.sleep(.3)
+            ser.write('100')
+            time.sleep(.3)
+            #ser.write('10')
+            #time.sleep(.)
+            last_value = float(current_temp)
+        r = requests.get("http://192.168.0.104:9999/temp?t={}".format(current_temp))
         lcd_write_temp(current_temp)
         time.sleep(3)
     except KeyboardInterrupt:

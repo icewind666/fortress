@@ -1,4 +1,5 @@
-# DCS-930LB2016062021103401.jpg
+# -*- coding: utf-8 -*-
+
 # bot token 180821508:AAFq2zwPfUObGYpIRjG97mMMEIMlVboi2Xk
 
 import logging
@@ -7,7 +8,7 @@ import time
 import os
 import os.path
 import collections
-import NewFileEventHandler
+#import NewFileEventHandler
 
 from psutil import virtual_memory
 from telegram.ext import CommandHandler
@@ -35,7 +36,7 @@ active_cameras = [
     {
         "id": 2,
         "title": "IP camera",
-        "ip": "192.168.0.101",
+        "ip": "192.168.0.102",
         "type": "ipcam"
     }
 ]
@@ -233,7 +234,7 @@ def get_cam_photo(cam_id):
     else:
         action = "image/jpeg.cgi"
         r = get("http://{}/{}".format(current_camera["ip"], action), auth=HTTPBasicAuth('admin', 't5atigeno2t'))
-        with open("temp.jpg", "wb") as f:
+        with open("/Users/icewind/Documents/Projects/hive/utils/temp.jpg", "wb") as f:
             f.write(r.content)
         for c in active_chats:
             sendingBot.sendPhoto(c, photo=open("temp.jpg", "rb"))
