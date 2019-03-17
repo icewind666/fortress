@@ -22,7 +22,7 @@ from watchdog.observers import Observer
 from telegram.ext import MessageHandler, Filters
 from requests import get
 from requests.auth import HTTPBasicAuth
-from utils import NewFileEventHandler
+from utils.NewFileEventHandler import NewFileEventHandler
 
 FTP_DIR = '/Users/icewind/ftp'
 active_chats = []

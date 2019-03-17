@@ -17,6 +17,9 @@ class NewFileEventHandler(FileSystemEventHandler):
 
     callback_handle = None
 
+    def __init__(self):
+        pass
+
     def on_created(self, event):
         if isinstance(event, FileCreatedEvent):
             print("File created!!")
