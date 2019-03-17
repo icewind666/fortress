@@ -12,7 +12,7 @@ class Camera(FortressElement):
         self.port = ""
         self.type = ""
         self.desc = ""
-        self.photo_method_url = "/image/jpeg.cgi" # default
+        self.photo_method_url = "/image/jpeg.cgi"  # default
         self.supports_images = True
         self.supports_video = False
 
