@@ -53,65 +53,62 @@ def get_archive_from_db():
     return result_json
 
 
-
 def write_to_storage(x):
     dt = datetime.datetime.now()
     #date_str = dt.strftime("%Y.%m.%dT%I:%M:%S")
     write_to_db(dt, x)
 
+
 class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
-    def do_HEAD(s):
-        s.send_response(200)
-        s.send_header("Content-type", "application/json")
-        s.send_header("Access-Control-Allow-Origin", "*")
-        s.end_headers()
+    def do_head(self):
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
 
-    def get_json_from_db(s):
-        s.send_response(200)
-        s.send_header("Access-Control-Allow-Origin", "*")
-        s.send_header("Content-type", "application/json")
-        s.end_headers()
+    def get_json_from_db(self):
+        self.send_response(200)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
 
         json_str = get_archive_from_db()
 
-        s.wfile.write(json_str)
+        self.wfile.write(json_str)
 
-
-    def do_GET(s):
-        url = s.path
-        #print url
+    def do_get(self):
+        url = self.path
         if "json" in url:
             # call data json from db
-            s.get_json_from_db()
+            self.get_json_from_db()
         else:
             query_parsed = parse_qs(urlparse(url).query)
 
             temperature = float(query_parsed['t'][0])
             last_value = get_last_from_db()
+
             if abs(temperature - last_value) > 0.5:
-                #print "T=", temperature, "; LAST=", last_value
-                #print "Writing new value"
                 write_to_storage(temperature)
 
             """Respond to a GET request."""
-            s.send_response(200)
-            s.send_header("Content-type", "text/html")
-            s.end_headers()
-            s.wfile.write("<html><head><title>Title goes here.</title></head>")
-            s.wfile.write("<body><p>This is a test.</p>")
-            s.wfile.write("<p>You accessed path: %s</p>" % s.path)
-            s.wfile.write("</body></html>")
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            self.wfile.write("<html><head><title>Title goes here.</title></head>")
+            self.wfile.write("<body><p>This is a test.</p>")
+            self.wfile.write("<p>You accessed path: %s</p>" % s.path)
+            self.wfile.write("</body></html>")
 
 
 if __name__ == '__main__':
     server_class = BaseHTTPServer.HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
-    print time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER)
+    print(time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER))
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
         pass
     httpd.server_close()
-    print time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER)
+    print(time.asctime(), "Server Stops - %s:%s" % (HOST_NAME, PORT_NUMBER))
 

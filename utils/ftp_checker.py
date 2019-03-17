@@ -1,4 +1,12 @@
 #!/usr/bin/env python
+
+"""
+NOT USED MODULE.
+
+Checks file on FTP and downloads it
+
+"""
+
 import ftplib
 
 FTP_HOST = 'localhost'

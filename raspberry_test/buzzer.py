@@ -82,13 +82,13 @@ def setup():
 
 def loop():
     while True:
-        print '\n    Playing song 1...'
+        print('\n    Playing song 1...')
         for i in range(1, len(song_1)):  # Play song 1
             Buzz.ChangeFrequency(song_1[i])  # Change the frequency along the song note
             time.sleep(beat_1[i] * 0.5)  # delay a note for beat * 0.5s
         time.sleep(1)  # Wait a second for next song.
 
-        print '\n\n    Playing song 2...'
+        print('\n\n    Playing song 2...')
         for i in range(1, len(song_2)):  # Play song 1
             Buzz.ChangeFrequency(song_2[i])  # Change the frequency along the song note
             time.sleep(beat_2[i] * 0.5)  # delay a note for beat * 0.5s

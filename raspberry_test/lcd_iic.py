@@ -1,6 +1,12 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+"""
+Модуль вывода текста на экран LCD
+(16x9).
+Ожидается что экран подключен через I2C
+"""
+
 import smbus
 import time
 

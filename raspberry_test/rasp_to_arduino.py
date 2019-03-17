@@ -57,7 +57,6 @@ class AntHead(object):
     TOWER_UP_CODE = "9"
     TOWER_DOWN_CODE = "10"
 
-
     def up(self):
         pass
 
@@ -87,8 +86,6 @@ class RangerAnt(Ant):
     With sensors and wheels
     """
     pass
-
-
 
 
 def move_tank(direction):

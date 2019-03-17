@@ -1,6 +1,14 @@
 # -*- coding: utf-8 -*-
 
-# bot token 180821508:AAFq2zwPfUObGYpIRjG97mMMEIMlVboi2Xk
+"""
+Модуль смотрит за отпределенной папкой.
+Присылает уведомления в телеграм если в папке появляется новый файл
+Работало так - камера делала фото по факту обнаружения - и складывала в папку
+Из этой папки данный модуль и забирал фото.
+
+URL для фото камеры(белой) - http://192.168.0.20/image/jpeg.cgi
+basic auth
+"""
 
 import logging
 import telegram
@@ -8,16 +16,14 @@ import time
 import os
 import os.path
 import collections
-#import NewFileEventHandler
-
 from psutil import virtual_memory
 from telegram.ext import CommandHandler
 from watchdog.observers import Observer
 from telegram.ext import MessageHandler, Filters
 from requests import get
 from requests.auth import HTTPBasicAuth
+from utils import NewFileEventHandler
 
-#FTP_DIR = '/home/pi/ftp'
 FTP_DIR = '/Users/icewind/ftp'
 active_chats = []
 active_cameras = [
@@ -36,7 +42,7 @@ active_cameras = [
     {
         "id": 2,
         "title": "IP camera",
-        "ip": "192.168.0.102",
+        "ip": "192.168.0.20",
         "type": "ipcam"
     }
 ]
@@ -176,6 +182,7 @@ def tell_full_status():
     total_info['last_modified'] = time.ctime(last_time)
     return total_info
 
+
 _ntuple_diskusage = collections.namedtuple('usage', 'total used free')
 
 
@@ -230,7 +237,7 @@ def get_cam_photo(cam_id):
         action = "photo.jpg"
         for c in active_chats:
             print("http://{}/{}".format(current_camera["ip"], action))
-            sendingBot.sendPhoto(c, photo = "http://{}/{}".format(current_camera["ip"], action))
+            sendingBot.sendPhoto(c, photo="http://{}/{}".format(current_camera["ip"], action))
     else:
         action = "image/jpeg.cgi"
         r = get("http://{}/{}".format(current_camera["ip"], action), auth=HTTPBasicAuth('admin', 't5atigeno2t'))

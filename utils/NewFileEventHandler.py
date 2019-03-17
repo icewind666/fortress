@@ -1,4 +1,10 @@
+"""
+Обработчик на события файловой системы.
+А точнее - событие появляения нового файла в заданной папке.
+По событию просто вызывает callback и в качестве агрумента отдает
+путь к новому файлу.
 
+"""
 import time
 from watchdog.events import FileCreatedEvent
 from watchdog.events import FileSystemEventHandler
