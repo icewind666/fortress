@@ -8,64 +8,89 @@ import json
 import time
 import sqlite3
 import datetime
-import BaseHTTPServer
-from urlparse import urlparse, parse_qs
+import psycopg2
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
 
-HOST_NAME = '192.168.0.104' # !!!REMEMBER TO CHANGE THIS!!!
-PORT_NUMBER = 9999 # Maybe set this to 9000.
+HOST_NAME = 'localhost'  # !!!REMEMBER TO CHANGE THIS!!!
+PORT_NUMBER = 9999  # Maybe set this to 9000.
 TEMP_FILE = 'temp.txt'
 
+
 def write_to_db(dt, value):
-    con = sqlite3.connect('temp')
-    cur = con.cursor()
-    cur.execute('INSERT INTO temperature (id, dt, value) VALUES(NULL, ?, ?)', (dt, value))
-    con.commit()
-    con.close()
+    try:
+        connection = psycopg2.connect(user="steelrat",
+                                      password="steelrat_password",
+                                      host="localhost",
+                                      port="5432",
+                                      database="steelrat")
 
-def get_last_from_db():
-    con = sqlite3.connect('temp')
-    cur = con.cursor()
-    cur.execute('SELECT value FROM temperature ORDER by dt DESC')
-    data = cur.fetchone()
-    result = data[0]
-    #print result
-    con.close()
-    return result
+        cursor = connection.cursor()
 
-def get_archive_from_db():
-    #print 'get_archive_from_db()'
-    con = sqlite3.connect('temp')
-    cur = con.cursor()
-    cur.execute('select dt,value from (select * from temperature order by id DESC limit 10) order by id ASC;')
+        postgres_insert_query = """ INSERT INTO temperature (dt, value) VALUES (%s,%s)"""
+        record_to_insert = (dt, value)
+        cursor.execute(postgres_insert_query, record_to_insert)
 
-    result = []
+        connection.commit()
+        count = cursor.rowcount
+        print(count, "Record inserted successfully into temperature table")
 
-    for row in cur:
-        dt = row[0]
-        value = row[1]
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        # closing database connection.
+        if (connection):
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
 
-        pair = {"dt":dt, "value":value}
-        result.append(pair)
 
-    result_json = json.dumps(result)
-    #print result_json
-    con.close()
-    return result_json
+def write_humidity_to_db(dt, value):
+    try:
+        connection = psycopg2.connect(user="steelrat",
+                                      password="steelrat_password",
+                                      host="localhost",
+                                      port="5432",
+                                      database="steelrat")
+
+        cursor = connection.cursor()
+
+        postgres_insert_query = """ INSERT INTO humidity (dt, value) VALUES (%s,%s)"""
+        record_to_insert = (dt, value)
+        cursor.execute(postgres_insert_query, record_to_insert)
+
+        connection.commit()
+        count = cursor.rowcount
+        print(count, "Record inserted successfully into humidity table")
+
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        # closing database connection.
+        if (connection):
+            cursor.close()
+            connection.close()
+            print("PostgreSQL connection is closed")
+
 
 
 def write_to_storage(x):
     dt = datetime.datetime.now()
-    #date_str = dt.strftime("%Y.%m.%dT%I:%M:%S")
     write_to_db(dt, x)
 
 
-class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+def write_to_humidity_storage(x):
+    dt = datetime.datetime.now()
+    write_humidity_to_db(dt, x)
 
-    def do_head(self):
-        self.send_response(200)
-        self.send_header("Content-type", "application/json")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
+
+class MyHandler(BaseHTTPRequestHandler):
+
+    def do_HEAD(s):
+        s.send_response(200)
+        s.send_header("Content-type", "application/json")
+        s.send_header("Access-Control-Allow-Origin", "*")
+        s.end_headers()
 
     def get_json_from_db(self):
         self.send_response(200)
@@ -77,32 +102,38 @@ class MyHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
         self.wfile.write(json_str)
 
-    def do_get(self):
-        url = self.path
+    def do_POST(s):
+        url = s.path
         if "json" in url:
             # call data json from db
             self.get_json_from_db()
         else:
-            query_parsed = parse_qs(urlparse(url).query)
+            content_length = int(s.headers['Content-Length'])
+            post_data = s.rfile.read(content_length)
+            post_data = post_data.decode('utf-8')
 
-            temperature = float(query_parsed['t'][0])
-            last_value = get_last_from_db()
+            query_parsed = parse_qs(post_data)
 
-            if abs(temperature - last_value) > 0.5:
-                write_to_storage(temperature)
+            value = float(query_parsed['value'][0])
+            sensor_id = str(query_parsed['sensor_id'][0])
+            #last_humidity_value = get_last_humidity_from_db()
+            #last_temp_value = get_last_temp_from_db()
 
-            """Respond to a GET request."""
-            self.send_response(200)
-            self.send_header("Content-type", "text/html")
-            self.end_headers()
-            self.wfile.write("<html><head><title>Title goes here.</title></head>")
-            self.wfile.write("<body><p>This is a test.</p>")
-            self.wfile.write("<p>You accessed path: %s</p>" % s.path)
-            self.wfile.write("</body></html>")
+            if sensor_id == "HUMIDITY":
+                #if abs(value - last_humidity_value) > 0.1:
+                write_to_humidity_storage(value)
+                #print("humidity = " + str(value))
+
+            if sensor_id == "DS18B20":
+                # if abs(value - last_temp_value) > 0.1:
+                write_to_storage(value)
+#                    print("temperature = " + str(value))
+
+            s.wfile.write("POST request for {}".format(s.path).encode('utf-8'))
 
 
 if __name__ == '__main__':
-    server_class = BaseHTTPServer.HTTPServer
+    server_class = HTTPServer
     httpd = server_class((HOST_NAME, PORT_NUMBER), MyHandler)
     print(time.asctime(), "Server Starts - %s:%s" % (HOST_NAME, PORT_NUMBER))
     try:
